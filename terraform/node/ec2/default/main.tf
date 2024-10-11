@@ -46,7 +46,7 @@ data "aws_ami" "ami" {
   most_recent      = true
   filter {
     name = "name"
-    values = ["al20*-ami-minimal-*-x86_64"]
+    values = ["al20*-ami-minimal-*-${var.cpu_architecture}"]
   }
   filter {
     name   = "state"
@@ -54,7 +54,7 @@ data "aws_ami" "ami" {
   }
   filter {
     name   = "architecture"
-    values = ["x86_64"]
+    values = [var.cpu_architecture]
   }
   filter {
     name   = "image-type"
@@ -109,6 +109,21 @@ resource "null_resource" "main_service_setup" {
 
       # Set up environment
       sudo yum install nodejs unzip wget tmux aws-cli -y
+
+      # Install nvm
+      wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
+      # Install the specified Node.js version, or use the system's version if 'none'
+      if [[ "${var.nodejs_version}" != "none" ]]; then
+        nvm install ${var.nodejs_version}
+        nvm use ${var.nodejs_version}
+      else
+        sudo yum install nodejs -y
+        echo "Using the default Node.js version provided by the OS"
+      fi
+
 
       echo "Node version in use: $(node -v)"
 
